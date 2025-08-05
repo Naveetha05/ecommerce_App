@@ -1,0 +1,9 @@
+✅ Homepage loaded: Home
+✅ Login attempted
+✅ Login successful
+✅ Shop page opened
+✅ Product added to cart
+✅ Cart page opened
+✅ Product present in cart
+✅ Contact page opened
+✅ Logout successful
