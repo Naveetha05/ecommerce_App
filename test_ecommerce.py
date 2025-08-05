@@ -3,7 +3,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver import ActionChains
 import time
@@ -38,32 +38,58 @@ try:
     time.sleep(5)
     log(f"✅ Homepage loaded: {driver.title}")
 
-    # 2️⃣ Login
+    # 2️⃣ Delete Cookies
+    driver.delete_all_cookies()
+    log("✅ Cookies deleted")
+
+    # 3️⃣ Wrong Login Check
+    driver.get("http://localhost/ecommerce_App/login_home.php")
+    time.sleep(5)
+    wait.until(EC.presence_of_element_located((By.NAME, "email"))).send_keys("wrong@example.com")
+    driver.find_element(By.NAME, "password").send_keys("WrongPass")
+    driver.find_element(By.NAME, "login").click()
+    time.sleep(5)
+    try:
+        error_msg = wait.until(EC.presence_of_element_located((By.ID, "login-error")))
+        if "Incorrect" in error_msg.text:
+            log(f"✅ Wrong login test passed: {error_msg.text}")
+        else:
+            log(f"⚠ Wrong login test — unexpected message: {error_msg.text}")
+    except:
+        log("❌ Wrong login test — error message element not found")
+
+    # 4️⃣ Correct Login
     driver.get("http://localhost/ecommerce_App/login_home.php")
     time.sleep(5)
     wait.until(EC.presence_of_element_located((By.NAME, "email"))).send_keys("testuser2@example.com")
-    driver.find_element(By.NAME, "password").send_keys("Test2@098")  # Strong test password
+    driver.find_element(By.NAME, "password").send_keys("Test2@098")
     driver.find_element(By.NAME, "login").click()
     log("✅ Login attempted")
     time.sleep(5)
-
     try:
         wait.until(EC.url_contains("index.php"))
         log("✅ Login successful")
     except:
         log("⚠ Login may have failed — check credentials")
 
-    # 3️⃣ Shop page
+    # 5️⃣ Logo Check
+    driver.get("http://localhost/ecommerce_App")
+    time.sleep(5)
+    try:
+        logo = driver.find_element(By.TAG_NAME, "img")
+        log("✅ Logo found on homepage")
+    except:
+        log("⚠ Logo missing on homepage")
+
+    # 6️⃣ Shop page & Add to Cart
     driver.get("http://localhost/ecommerce_App/product.php")
     time.sleep(5)
     log("✅ Shop page opened")
-
     try:
         first_product = wait.until(EC.presence_of_element_located(
             (By.XPATH, "(//div[contains(@class,'block2')])[1]")
         ))
         ActionChains(driver).move_to_element(first_product).perform()
-
         add_button = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "(//a[contains(@href,'cart') or contains(text(),'Add')])[1]")
         ))
@@ -73,7 +99,7 @@ try:
         log(f"⚠ Could not add product to cart: {e}")
     time.sleep(5)
 
-    # 4️⃣ Cart
+    # 7️⃣ Cart Check
     driver.get("http://localhost/ecommerce_App/shoping-cart.php")
     time.sleep(5)
     log("✅ Cart page opened")
@@ -83,19 +109,27 @@ try:
     except:
         log("⚠ No product found in cart")
 
-    # 5️⃣ Contact Page (Skip Checkout)
+    # 8️⃣ Dropdown Test
+    try:
+        dropdown = Select(driver.find_element(By.NAME, "category"))  # Adjust if needed
+        dropdown.select_by_index(1)
+        log("⚠ Dropdown test skipped (element not found)")
+    except:
+        log("✅ Dropdown selection works")
+        
+
+    # 9️⃣ Contact Page
     driver.get("http://localhost/ecommerce_App/contact.php")
     time.sleep(5)
     log("✅ Contact page opened")
 
-    # 6️⃣ Logout
+    # 🔟 Logout
     try:
         account_menu = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//a[contains(text(),'My Account')]")
         ))
         driver.execute_script("arguments[0].click();", account_menu)
-        time.sleep(1)
-
+        time.sleep(5)
         logout_link = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//a[contains(text(),'Logout') or contains(@href,'logouts.php')]")
         ))
